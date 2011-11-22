@@ -1,0 +1,73 @@
+Unshred image using PIL.
+========================
+
+Courtesy of Instagram : http://instagram-engineering.tumblr.com/post/12651721845/instagram-engineering-challenge-the-unshredder
+
+This algorithm is very simple, it splits an image using shred objects.
+It starts from the left shred, searching the fitting shred on its right.
+
+Algorithm
+---------
+
+I adopt a naive algorithm (with no signal theory).
+
+I compare each time one shred with every other shreds not ordered yet.
+
+If two shreds are very similar on their border, they must be consequently neighbor.
+So I just compare pixels of their border. The current implementation can use a mean approach
+with the border pixels to not just compare one pixel at a time but more. Some tests show that 3 pixels by
+each side is a good value (it also depends of the shred's width).
+
+E[P(x-2)P(x-1)P(x)] | E[P(x+1)P(x+2)P(x+3)]
+
+        E1                  E2
+
+We subtract E1 and E2 (the closer they are, the more the result is close to 0).
+We iterate through the whole height (an optimization can be done here to only test some points).
+It gives us a score that we can compare.
+
+The final smaller score is the neighbor. With this algorithm, we can find neighbor.
+
+Strategy
+--------
+
+For example (the good order is the crescent order):
+
+4 -> 5 -> 1 -> 2 -> 3
+
+So in this example 5 is the right border and 1 is the left border.
+The algorithm starts with :
+
+who is the right side of '4'.
+We found 5.
+We perform an inverse search to found the left side of 5. It is 4. We can continue.
+4 -> 5
+
+who is the right side of '5'
+We found '2' (can be anything, it will find something but this is meaningless, it is an edge case not solved here).
+We perform an inverse search which is not 2 (if we are unlucky, it is 2 again, another edge case here, not solved).
+So we can nearly say (see edge case) that '5' is the right border.
+
+We reverse the current order to perform an inverse search. We do not need to validate left side now.
+5 -> 4
+
+Who is the left side of '4'
+We found '3'.
+5 -> 4 -> 3
+
+And so on ...
+
+5 -> 4 -> 3 -> 2 -> 1
+
+Finally we reverse again.
+
+1 -> 2 -> 3 -> 4 -> 5
+
+It works.
+
+It can fail if it is unable to determine a neighbor (it will wrongly determine a border).
+
+Plus
+----
+
+Performance tip: all scoring is done with color (+alpha) tuple. It can be avoided to gain speed and memory to just sum them into a single int.
